@@ -51,7 +51,7 @@ namespace EngineAPI
         public object Value
         {
             get { return (object)GetValue(_value); }
-            set { SetValue(_value, value); }
+            set { SetValue(_value, value); NotifyPropertyChanged(Name); }
         }
 
 

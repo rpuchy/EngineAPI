@@ -6,7 +6,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Collections.ObjectModel;
 using System.Windows.Shapes;
-using System.ComponentModel;
 using System.Linq;
 using System.Security.RightsManagement;
 using System.Windows.Media;
@@ -21,10 +20,13 @@ namespace EngineAPI
     {
 
         protected XmlNode _innerXml { get; set; }
+        protected XmlDocument _schema = new XmlDocument();
+        protected string _schemaFilename;
 
-        public EngineObject(XmlNode _xmlNode)
+        public EngineObject(XmlNode _xmlNode, XmlDocument _xmlSchema)
         {
-            _innerXml = _xmlNode;    
+            _innerXml = _xmlNode;
+            _schema = _xmlSchema;
         }
 
         /// <summary>
@@ -46,7 +48,7 @@ namespace EngineAPI
                 ParamList _parameters = new ParamList();
                 foreach (XmlNode _node in _innerXml.ChildNodes)
                 {
-                    if (isParameter(_node))
+                    if (IsParameter(_node))
                     {
                         var p = new Parameter() { Name = _node.Name, Value = _node.InnerText };
                         p.PropertyChanged += P_PropertyChanged;
@@ -59,7 +61,12 @@ namespace EngineAPI
 
         private void P_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            throw new NotImplementedException();
+            Parameter s = (Parameter) sender;
+            var node = _innerXml.SelectSingleNode(s.Name);
+            if (node != null)
+            {
+                node.InnerText = s.Value.ToString();
+            }
         }
 
         /// <summary>
@@ -73,9 +80,9 @@ namespace EngineAPI
                 List<EngineObject> _children = new List<EngineObject>();
                 foreach (XmlNode _node in _innerXml.ChildNodes)
                 {
-                    if (!isParameter(_node) && !isComment(_node) && !isTable(_node))
+                    if (!IsParameter(_node) && !IsComment(_node) && !IsTable(_node))
                     {
-                        _children.Add(new EngineObject(_node));
+                        _children.Add(new EngineObject(_node,_schema));
                     }
                 }
                 return _children;
@@ -93,7 +100,7 @@ namespace EngineAPI
                 List<Table> _tables = new List<Table>();
                 foreach (XmlNode _node in _innerXml.ChildNodes)
                 {
-                    if (isTable(_node))
+                    if (IsTable(_node))
                     {
                         _tables.Add(new Table(_node));
                     }
@@ -103,46 +110,93 @@ namespace EngineAPI
         }
 
 
-        public string Name
-        {
-            get { return _innerXml.Name; }
-        }
+        public string Name => _innerXml.Name;
 
         /// <summary>
         /// The name of the object if it exists
         /// </summary>
-        public string ObjectName
-        {
-            get { return _innerXml.SelectSingleNode("./Name|./Params/Name")?.InnerText; }
-        }
+        public string ObjectName => _innerXml.SelectSingleNode("./Name|./Params/Name")?.InnerText;
 
         /// <summary>
         /// Search through the Schema and return a list of addable submodels
         /// </summary>
         /// <returns>A list of addable submodels</returns>
-        public List<String> AddableObjects()
+        public List<ObjectDetails> AddableObjects()
         {
-            return null;
+            //This is for addable objects e.g. ESG models/products/rebalance rules
+            List<ObjectDetails> templist = new List<ObjectDetails>();
+            XmlNode Params = _schema.SelectSingleNode("//Simulation//" + this.Name);
+            foreach (XmlNode param in Params.ChildNodes)
+            {
+                if (param.Attributes["type"].Value == "container")
+                {
+                    templist.Add(ObjectDetails.LoadFromXml(param));
+                }
+            }
+            return templist;
+        }
+
+
+
+        public List<ParameterDetails> AddableParameters()
+        {
+            //this is so we can see optional parameters
+            List<ParameterDetails> templist = new List<ParameterDetails>();
+            XmlNode Params = _schema.SelectSingleNode("//Simulation//" + this.Name);
+            foreach (XmlNode param in Params.ChildNodes)
+            {
+                if (param.Attributes["type"].Value != "container")
+                {
+                   templist.Add(ParameterDetails.LoadFromXml(param));
+                }
+            }
+            return templist;           
+        }
+
+        public List<string> AddableValueTypes()
+        {
+            List<string> templist = new List<string>();
+            XmlNode Params = _schema.SelectSingleNode("//Simulation//" + this.Name);
+            foreach (string val in Params.Attributes["ValueTypes"].Value.Split(','))
+            {
+                templist.Add(val);
+            }
+            return templist;
+        }
+
+        protected void AddQuery(string ValueType)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected void AddOperator(string Query,string OperatorType)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddOutput(string ValueType, string OperatorType)
+        {
+            throw new NotImplementedException();
         }
         
-        private static bool isParameter(XmlNode _node)
+        private static bool IsParameter(XmlNode node)
         {
-            return (_node.ChildNodes.Count == 1 && _node.FirstChild.Name == "#text");
+            return (node.ChildNodes.Count == 1 && node.FirstChild.Name == "#text");
         }
 
-        private static bool isComment(XmlNode _node)
+        private static bool IsComment(XmlNode node)
         {
-            return (_node.Name == "#comment");
+            return (node.Name == "#comment");
         }
 
-        private static bool isTable(XmlNode _node)
+        private static bool IsTable(XmlNode node)
         {
-            if (_node.ChildNodes.Count<=1)
+            if (node.ChildNodes.Count<=1)
             {
                 return false;
             }
-            string lastname = _node.FirstChild.Name;
-            foreach (XmlNode child in _node.ChildNodes)
+            string lastname = node.FirstChild.Name;
+            foreach (XmlNode child in node.ChildNodes)
             {
                 if (child.Name!=lastname)
                 {
@@ -153,13 +207,8 @@ namespace EngineAPI
         }
 
 
-        public EngineObject Parent
-        {
-            get
-            {
-                return new EngineObject(_innerXml.ParentNode);
-            }
-        }
+        public EngineObject Parent => new EngineObject(_innerXml.ParentNode,_schema);
+
         /// <summary>
         /// Searches the XML and finds the first object that matches the node name
         /// </summary>
@@ -169,7 +218,7 @@ namespace EngineAPI
         {
             string alternate = char.ToUpper(nodename[0]) + nodename.Substring(1);
             XmlNode temp = _innerXml.SelectSingleNode(".//" + nodename + "|.//"+alternate);
-            return (temp != null) ? new EngineObject(temp) : null;
+            return (temp != null) ? new EngineObject(temp,_schema) : null;
         }
 
         /// <summary>
@@ -184,9 +233,9 @@ namespace EngineAPI
             List<EngineObject> _tempout = new List<EngineObject>();
             foreach(XmlNode node in temp)
             {
-                _tempout.Add(new EngineObject(node));
+                _tempout.Add(new EngineObject(node,_schema));
             }
-            return (_tempout != null) ? _tempout : null;
+            return _tempout;
         }
 
         /// <summary>
@@ -197,7 +246,7 @@ namespace EngineAPI
         public EngineObject FindObjectbyName(string name)
         {
             XmlNode temp = _innerXml.SelectSingleNode(".//*[Name='" + name + "']");
-            return (temp != null) ? new EngineObject(temp) : null;
+            return (temp != null) ? new EngineObject(temp,_schema) : null;
         }
 
         /// <summary>
@@ -211,9 +260,9 @@ namespace EngineAPI
             List<EngineObject> _tempout = new List<EngineObject>();
             foreach (XmlNode node in temp)
             {
-                _tempout.Add(new EngineObject(node));
+                _tempout.Add(new EngineObject(node,_schema));
             }
-            return (_tempout != null) ? _tempout : null;
+            return _tempout;
         }
 
         public static string GetAlternate(string input)

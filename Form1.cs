@@ -19,10 +19,17 @@ namespace EngineAPI
 
         private void button2_Click(object sender, EventArgs e)
         {
-            Simulation MySimulation = new Simulation(textBox1.Text);
+            Simulation MySimulation = new Simulation(textBox1.Text, @"C:\Git\planning-tool-documentation\EngineInputTemplateTypeDefines.xml");
 
 
             string children = "";
+            MySimulation.FindObjectbyNodeName("Params").Parameters["Scenarios"] = 1.ToString();
+
+            var test = MySimulation.FindObjectbyNodeName("Params").AddableParameters();
+
+
+            MySimulation.SaveAs("c:\\temp\\sim1scenario.xml");
+
             foreach (var table in MySimulation.FindObjectbyName("AUYieldCurve").FindObjectbyNodeName("ModelParameters").Tables)
             {
                 children = children + " , " + table.Columns.ToString();
