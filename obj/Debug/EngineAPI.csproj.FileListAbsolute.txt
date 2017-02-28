@@ -1,0 +1,9 @@
+C:\Git\EngineAPI\bin\Debug\EngineAPI.exe.config
+C:\Git\EngineAPI\bin\Debug\EngineAPI.exe
+C:\Git\EngineAPI\bin\Debug\EngineAPI.pdb
+C:\Git\EngineAPI\obj\Debug\EngineAPI.csprojResolveAssemblyReference.cache
+C:\Git\EngineAPI\obj\Debug\EngineAPI.Form1.resources
+C:\Git\EngineAPI\obj\Debug\EngineAPI.Properties.Resources.resources
+C:\Git\EngineAPI\obj\Debug\EngineAPI.csproj.GenerateResource.Cache
+C:\Git\EngineAPI\obj\Debug\EngineAPI.exe
+C:\Git\EngineAPI\obj\Debug\EngineAPI.pdb

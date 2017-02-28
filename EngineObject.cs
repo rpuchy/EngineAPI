@@ -48,11 +48,18 @@ namespace EngineAPI
                 {
                     if (isParameter(_node))
                     {
-                        _parameters.Add(new Parameter() { Name = _node.Name, Value = _node.InnerText });
+                        var p = new Parameter() { Name = _node.Name, Value = _node.InnerText };
+                        p.PropertyChanged += P_PropertyChanged;
+                        _parameters.Add(p);
                     }
                 }
                 return _parameters;
             }
+        }
+
+        private void P_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -99,6 +106,14 @@ namespace EngineAPI
         public string Name
         {
             get { return _innerXml.Name; }
+        }
+
+        /// <summary>
+        /// The name of the object if it exists
+        /// </summary>
+        public string ObjectName
+        {
+            get { return _innerXml.SelectSingleNode("./Name|./Params/Name")?.InnerText; }
         }
 
         /// <summary>
