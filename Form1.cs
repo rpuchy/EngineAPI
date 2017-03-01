@@ -33,15 +33,12 @@ namespace EngineAPI
             slist.Add(2);
 
             MySimulation.AddTransactionLog("c:\\temp\\tlog.csv", slist);
+            
 
             MySimulation.SetoutputLocation("c:\\temp\\results.csv");
 
             MySimulation.SaveAs("c:\\temp\\sim1scenario.xml");
 
-            foreach (var table in MySimulation.FindObjectbyName("AUYieldCurve").FindObjectbyNodeName("ModelParameters").Tables)
-            {
-                children = children + " , " + table.Columns.ToString();
-            }
 
         }
 

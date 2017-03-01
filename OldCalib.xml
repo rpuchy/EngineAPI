@@ -12,7 +12,7 @@
 		<PercentileInterpolation>PERCENTILE.EXC</PercentileInterpolation> 
 		<Threads>0</Threads>
 		<AlwaysSimulateESG>true</AlwaysSimulateESG>
-		<output_file>c:\Foresight\Results\ESGoutputs_July2016.csv</output_file>
+		
     </Params>
     <Inputs>
 		<EconomicScenarioGenerator>

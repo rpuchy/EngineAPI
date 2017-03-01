@@ -19,8 +19,8 @@ namespace EngineAPI
         public string referenceField { get; set; }
         public string referenceSubType { get; set; }
         public string referenceMetaType { get; set; }
-        public string minOccurs { get; set; }
-        public string maxOccurs { get; set; }
+        public int minOccurs { get; set; }
+        public int maxOccurs { get; set; }
         public string defaultval { get; set; }
         public string defaultType { get; set; }
         public string unique { get; set; }
@@ -43,8 +43,8 @@ namespace EngineAPI
             t.defaultval = param.Attributes[Schema.defaultValue]?.Value;
             t.depends = param.Attributes[Schema.depends]?.Value;
             t.isUniqueScope = param.Attributes[Schema.isUniqueScope]?.Value == "true";
-            t.maxOccurs = param.Attributes[Schema.maxOccurs]?.Value;
-            t.minOccurs = param.Attributes[Schema.minOccurs]?.Value;
+            t.minOccurs = int.Parse(param.Attributes[Schema.minOccurs]?.Value);
+            t.maxOccurs = param.Attributes[Schema.maxOccurs]?.Value == "" ? 9999 : int.Parse(param.Attributes[Schema.maxOccurs]?.Value);
             t.metaType = param.Attributes[Schema.metaType]?.Value;
             t.reference = param.Attributes[Schema.reference]?.Value;
             t.referenceField = param.Attributes[Schema.referenceField]?.Value;

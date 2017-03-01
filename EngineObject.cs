@@ -86,11 +86,21 @@ namespace EngineAPI
 
         private void _parameters_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            var doc = _innerXml.OwnerDocument;
-            var param = (Parameter)sender;
-            var node = doc.CreateElement(param.Name);
-            node.AppendChild(doc.CreateTextNode(param.Value.ToString()));
-            _innerXml.AppendChild(node);
+            if (e.PropertyName == "New")
+            {
+                var doc = _innerXml.OwnerDocument;
+                var param = (Parameter)sender;
+                var node = doc.CreateElement(param.Name);
+                node.AppendChild(doc.CreateTextNode(param.Value.ToString()));
+                _innerXml.AppendChild(node);
+            }
+            else
+            {
+                //We need to remove the parameter
+                var param = (Parameter)sender;
+                var node = _innerXml.SelectSingleNode(".//" + param.Name + "[text()='" + param.Value + "']");
+                node.ParentNode.RemoveChild(node);                
+            }
         }
 
         private void P_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -107,11 +117,11 @@ namespace EngineAPI
         /// Search through XML node and identify any children then add them to the list
         /// </summary>
         /// <returns>A list of the children objects present in this node</returns>
-        public List<EngineObject> Children
+        public ObjectList<EngineObject> Children
         {
             get
             {
-                List<EngineObject> _children = new List<EngineObject>();
+                ObjectList<EngineObject> _children = new ObjectList<EngineObject>();
                 foreach (XmlNode _node in _innerXml.ChildNodes)
                 {
                     if (!IsParameter(_node) && !IsComment(_node) && !IsTable(_node))
@@ -119,19 +129,61 @@ namespace EngineAPI
                         _children.Add(new EngineObject(_node,_schema));
                     }
                 }
+                _children.PropertyChanged += _children_PropertyChanged;
                 return _children;
             }
+        }
+
+        private void _children_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == "Remove")
+            {
+                var eObj = (EngineObject)sender;
+
+                var nodes = _innerXml.SelectNodes(".//" + eObj.Name);
+
+                foreach (XmlNode node in nodes)
+                {
+                    if (eObj.Equals(node))
+                    {
+                        node.ParentNode.RemoveChild(node);
+                    }
+                }
+            }
+        }
+
+        public bool Equals(XmlNode node)
+        {
+            //Check Parameters
+            foreach (XmlNode child in node.ChildNodes)
+            {
+                if (IsParameter(child))
+                {
+                    if (child.InnerText!=Parameters[child.Name].ToString())
+                    {
+                        return false;
+                    }
+                }
+                if (!IsParameter(child) && !IsComment(child) && !IsTable(child))
+                {
+                    if (FindChild(child.Name).Equals(child))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         /// <summary>
         /// Search through the xml and return a list of tables if they exist
         /// </summary>
         /// <returns>A list of tables in this node</returns>
-        public List<Table> Tables
+        public ObjectList<Table> Tables
         {
             get
             {
-                List<Table> _tables = new List<Table>();
+                ObjectList<Table> _tables = new ObjectList<Table>();
                 foreach (XmlNode _node in _innerXml.ChildNodes)
                 {
                     if (IsTable(_node))
@@ -176,7 +228,7 @@ namespace EngineAPI
             try
             {
                 XmlNode Params = _schema.GetObjectSchema(this);
-                var ObjectList = Schema.GetObjectsFromXml(Params, Schema.ObjectClassifier.Optional);
+                var ObjectList = Schema.GetObjectsFromXml(Params, Schema.Classifier.Optional);
                 //Now we check if any objects have maxOccurs=1 and already exist
 
                 foreach (var obj in ObjectList)
@@ -196,6 +248,27 @@ namespace EngineAPI
 
             }
             return templist;
+        }
+
+        public EngineObject AddObject(string objName)
+        {
+            var objs = AddableObjects().Find(x => x.NodeName == objName);
+            if (objs != null)
+            {
+                var node = _innerXml.OwnerDocument.ImportNode(objs.XmlSnippet, true);
+                node.Attributes.RemoveAll();
+                foreach (XmlElement el in node.SelectNodes(".//*"))
+                {
+                    if (el.Attributes[Schema.defaultValue] != null)
+                    {
+                        el.InnerText = el.Attributes[Schema.defaultValue].Value;
+                    }
+                    el.Attributes.RemoveAll();
+                }
+                _innerXml.AppendChild(node);
+                return new EngineObject(node, _schema);
+            }
+            return null;
         }
 
 
@@ -219,18 +292,41 @@ namespace EngineAPI
             }
             return null;
         }
+
+        public void removeObject(EngineObject Obj)
+        {
+             Children.Remove(Obj);
+        }
         
         public List<ParameterDetails> AddableParameters()
-        {
-            //this is so we can see optional parameters
-            
+        {      
             XmlNode Params = _schema.GetObjectSchema(this);
-            return Schema.GetParametersFromXml(Params);           
+            return Schema.GetParametersFromXml(Params,Schema.Classifier.Optional);           
         }
 
         public void AddParameter(String pName,string pValue)
         {
+            //TODO : Validate the parameter values
+            XmlNode Params = _schema.GetObjectSchema(this);
+            var paramdesc = Schema.GetParametersFromXml(Params, Schema.Classifier.Optional);
+            int count = Parameters.FindAll(x => x.Name == pName).Count;
+            if (paramdesc.Find(x => x.Name == pName)==null || paramdesc.Find(x => x.Name == pName).maxOccurs <= count )
+            {
+                throw new Exception("Parameter can not be Added - Name : " + pName + " , Value : " + pValue);
+            }
             Parameters.Add(new Parameter() { Name = pName, Value = pValue });
+        }
+
+        public void RemoveParameter(string pName, string pValue)
+        {
+            XmlNode Params = _schema.GetObjectSchema(this);
+            var paramdesc = Schema.GetParametersFromXml(Params,Schema.Classifier.Required);
+            int count=Parameters.FindAll(x => x.Name == pName).Count;
+            if (paramdesc.Find(x => x.Name == pName)==null ||  paramdesc.Find(x=>x.Name==pName).minOccurs>=count)
+            {
+                throw new Exception("Parameter can not be deleted - Name : "+pName +" , Value : " + pValue);
+            }
+            Parameters.Remove(new Parameter() { Name = pName, Value = pValue });
         }
 
         public List<string> AddableValueTypes()
@@ -282,8 +378,35 @@ namespace EngineAPI
             return true;
         }
 
+        public override bool Equals(object obj)
+        {
+            //only if all the parameters and all the children are the same are these objects identical
+            EngineObject eObj = ((EngineObject)obj);
+            for (int i=0;i<Parameters.Count;i++)
+            {
+                if (!Parameters[i].Equals(eObj.Parameters[i]))
+                {
+                    return false;
+                }
+            }
+            for (int i = 0; i < Children.Count; i++)
+            {
+                if (Children[i] != eObj.Children[i])
+                {
+                    return false;
+                }
+            }
+            return this.Name == eObj.Name;
+        }
+
 
         public EngineObject Parent => new EngineObject(_innerXml.ParentNode,_schema);
+
+        public EngineObject FindChild(string cname)
+        {
+            return Children.Find(x => x.Name == cname);
+        }
+
 
         /// <summary>
         /// Searches the XML and finds the first object that matches the node name

@@ -22,11 +22,11 @@ namespace EngineAPI
         public static ObjectDetails LoadFromXml(XmlNode node)
         {
             ObjectDetails temp = new ObjectDetails();
-            temp.Parameters = Schema.GetParametersFromXml(node);
+            temp.Parameters = Schema.GetParametersFromXml(node, Schema.Classifier.All);
             temp.NodeName = node.Name;
             temp.minOccurs = int.Parse(node.Attributes[Schema.minOccurs]?.Value);
             temp.maxOccurs = node.Attributes[Schema.maxOccurs]?.Value == "" ? 9999 : int.Parse(node.Attributes[Schema.maxOccurs]?.Value);
-            temp.SubObjects = Schema.GetObjectsFromXml(node, Schema.ObjectClassifier.All);
+            temp.SubObjects = Schema.GetObjectsFromXml(node, Schema.Classifier.All);
             temp.ValueTypes = Schema.GetValueTypesfromXml(node);            
             temp.XmlSnippet = node.CloneNode(true);            
             return temp;

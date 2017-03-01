@@ -48,9 +48,20 @@ namespace EngineAPI
             throw new NotImplementedException();
         }
 
+        public void AddAllScenarioFiles()
+        {
+            throw new NotImplementedException();
+        }
+
         public void SetoutputLocation(string filename)
         {
-            _innerXml.SelectSingleNode("//Simulation/Params/OutputFile|//Simulation/Params/output_file").InnerText = filename;
+            var node = _innerXml.SelectSingleNode("//Simulation/Params/OutputFile|//Simulation/Params/output_file");
+            if (node==null)
+            {
+                this.FindObjectbyNodeName("Params").AddParameter("OutputFile", filename);
+                return;
+            }
+            node.InnerText = filename;
             
         }
 
@@ -58,25 +69,24 @@ namespace EngineAPI
         {
             if (Scenarios.Count == 0) return;
             var Params = FindObjectbyNodeName("Params");
-            var tLog = Params.AddableObjects().Find(x => x.NodeName == "TransactionLog");
-            var tlog_obj = Params.AddObject(tLog);
+            var tlog_obj = Params.AddObject("TransactionLog");
             tlog_obj.Parameters["LogFile"] = filename;
-            var ScenariosParams = tlog_obj.Children.Find(x => x.Name == "Scenarios");
-            if (Scenarios.Count ==1)
+            var ScenariosParams = tlog_obj.FindChild("Scenarios");
+            if (Scenarios.Count >=1)
             {
                 ScenariosParams.Parameters["Scenario"] = Scenarios[0];
-                return;
+                if (Scenarios.Count==1) return;
             }
             for (int i=1;i<Scenarios.Count;i++)
             {
                 ScenariosParams.AddParameter("Scenario", Scenarios[i].ToString());
-            }     
+            }
         }
 
         public void RemoveOutputs()
         {
-            _innerXml.SelectSingleNode("\\Queries").InnerText = "";
-            _innerXml.SelectSingleNode("\\Operators").InnerText = "";
+            _innerXml.SelectSingleNode("\\Queries").RemoveAll();
+            _innerXml.SelectSingleNode("\\Operators").RemoveAll();
         }
 
         public Simulation(XmlDocument doc) : base(doc,new XmlDocument())

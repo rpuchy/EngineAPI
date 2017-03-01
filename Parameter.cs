@@ -12,7 +12,7 @@ using System.ComponentModel;
 
 namespace EngineAPI
 {
-    public class Parameter : DependencyObject, INotifyPropertyChanged, IEquatable<Parameter>
+    public class Parameter : DependencyObject, INotifyPropertyChanged
     {
         public Parameter()
         {
@@ -31,8 +31,9 @@ namespace EngineAPI
         public bool Equals(Parameter other)
         {
             if (other == null) return false;
-            return (this.Name.Equals(other.Name));
+            return (this.Name==other.Name && this.Value==other.Value);
         }
+
 
         public static readonly DependencyProperty _name =
         DependencyProperty.Register("Name", typeof(string),

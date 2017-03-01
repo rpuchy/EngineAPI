@@ -9,11 +9,8 @@ using System.Threading.Tasks;
 
 namespace EngineAPI
 {
-    public class ParamList : INotifyPropertyChanged
-    {
-
-        protected List<Parameter> InternalList = new List<Parameter>();
-        
+    public class ParamList : ObjectList<Parameter>
+    {    
         public Object this[string name]
         {
             get
@@ -48,50 +45,10 @@ namespace EngineAPI
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
-                    throw;
+                    throw new Exception("Parameter : "+name+" could not be found");
                 }                
             }
         }
 
-        public Parameter this[int index]
-        {
-            get
-            {
-                return InternalList[index];
-            }
-            set
-            {
-              InternalList[index].Value = value.ToString();
-            }
-        }
-
-        public void Add(Parameter param)
-        {
-            InternalList.Add(param);
-            NotifyPropertyChanged("New",param);
-        }
-
-        public void Remove(Parameter param)
-        {
-            InternalList.Remove(param);
-            NotifyPropertyChanged("Remove",param);
-        }
-
-        public int Count
-        {
-            get
-            { return InternalList.Count();}
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        private void NotifyPropertyChanged(string ParamChanged, Parameter Changed)
-        {
-            if (PropertyChanged != null)
-            {
-                this.PropertyChanged(Changed, new PropertyChangedEventArgs(ParamChanged));
-            }
-        }
     }
 }

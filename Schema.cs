@@ -49,7 +49,7 @@ namespace EngineAPI
         #endregion //ReservedValues
 
 
-        public enum ObjectClassifier { All=1, Required=2,Optional=3 }
+        public enum Classifier { All=1, Required=2,Optional=3 }
 
 
 
@@ -114,20 +114,41 @@ namespace EngineAPI
             return null;
         }
 
-        public static List<ParameterDetails> GetParametersFromXml(XmlNode node)
+        public static List<ParameterDetails> GetParametersFromXml(XmlNode node,Classifier objectTypes)
         {
+
             List<ParameterDetails> templist = new List<ParameterDetails>();
-            foreach (XmlNode param in node.ChildNodes)
+            try
             {
-                if (param.Attributes[Schema.type].Value != Schema.container_name)
+                foreach (XmlNode param in node.ChildNodes)
                 {
-                    templist.Add(ParameterDetails.LoadFromXml(param));
+                    if (param.Attributes[Schema.type].Value != Schema.container_name)
+                    {
+                        int minOccurs = int.Parse(param.Attributes[Schema.minOccurs]?.Value);
+                        int maxOccurs = param.Attributes[Schema.maxOccurs]?.Value == "" ? 9999 : int.Parse(param.Attributes[Schema.maxOccurs]?.Value);
+                        if (objectTypes == Classifier.Optional && maxOccurs >= 1 && !(minOccurs == 1 && maxOccurs == 1))
+                        {
+                            templist.Add(ParameterDetails.LoadFromXml(param));
+                        }
+                        else if (objectTypes == Classifier.Required && minOccurs >= 1 && maxOccurs >= 1)
+                        {
+                            templist.Add(ParameterDetails.LoadFromXml(param));
+                        }
+                        else
+                        {
+                            templist.Add(ParameterDetails.LoadFromXml(param));
+                        }
+                    }
                 }
+            }
+            catch(Exception e)
+            {
+                throw new Exception("Error reading Scheme : " + e.Message + "\n" + node.InnerXml);
             }
             return templist;
         }
 
-        public static List<ObjectDetails> GetObjectsFromXml(XmlNode node, ObjectClassifier objectTypes)
+        public static List<ObjectDetails> GetObjectsFromXml(XmlNode node, Classifier objectTypes)
         {
             try
             {
@@ -138,11 +159,11 @@ namespace EngineAPI
                     {
                         int minOccurs = int.Parse(param.Attributes[Schema.minOccurs]?.Value);
                         int maxOccurs = param.Attributes[Schema.maxOccurs]?.Value == "" ? 9999 : int.Parse(param.Attributes[Schema.maxOccurs]?.Value);
-                        if (objectTypes == ObjectClassifier.Optional && maxOccurs >= 1 && !(minOccurs == 1 && maxOccurs == 1))
+                        if (objectTypes == Classifier.Optional && maxOccurs >= 1 && !(minOccurs == 1 && maxOccurs == 1))
                         {
                             templist.Add(ObjectDetails.LoadFromXml(param));
                         }
-                        else if (objectTypes == ObjectClassifier.Required && minOccurs >= 1 && maxOccurs >= 1)
+                        else if (objectTypes == Classifier.Required && minOccurs >= 1 && maxOccurs >= 1)
                         {
                             templist.Add(ObjectDetails.LoadFromXml(param));
                         }

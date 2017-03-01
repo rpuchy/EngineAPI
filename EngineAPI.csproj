@@ -57,6 +57,7 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="ObjectDetails.cs" />
+    <Compile Include="ObjectList.cs" />
     <Compile Include="Parameter.cs" />
     <Compile Include="ParameterDetails.cs" />
     <Compile Include="ParamList.cs" />
