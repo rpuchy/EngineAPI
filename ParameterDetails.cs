@@ -34,26 +34,29 @@ namespace EngineAPI
         {
             ParameterDetails t = new ParameterDetails();
             t.Name = param.Name;
-            t.Description = param.Attributes["desc"]?.Value;
-            t.Type = param.Attributes["type"]?.Value;
-            t.UniqueScopeTo = param.Attributes["UniqueScopeTo"]?.Value;
-            t.bounds = param.Attributes["bounds"]?.Value;
-            t.constraint = param.Attributes["constraint"]?.Value;
-            t.defaultType = param.Attributes["defaultType"]?.Value;
-            t.defaultval = param.Attributes["default"]?.Value;
-            t.depends = param.Attributes["depends"]?.Value;
-            t.isUniqueScope = param.Attributes["isUniqueScope"]?.Value == "true";
-            t.maxOccurs = param.Attributes["maxOccurs"]?.Value;
-            t.minOccurs = param.Attributes["minOccurs"]?.Value;
-            t.metaType = param.Attributes["metaType"]?.Value;
-            t.reference = param.Attributes["reference"]?.Value;
-            t.referenceField = param.Attributes["referenceField"]?.Value;
-            t.referenceMetaType = param.Attributes["referenceMetaType"]?.Value;
-            t.referenceSubType = param.Attributes["referenceSubType"]?.Value;
-            t.subType = param.Attributes["subType"]?.Value;
-            t.unique = param.Attributes["unique"]?.Value;
-            t.uniqueSearchRef = param.Attributes["uniqueSearchRef"]?.Value;
+            t.Description = param.Attributes[Schema.desc]?.Value;
+            t.Type = param.Attributes[Schema.type]?.Value;
+            t.UniqueScopeTo = param.Attributes[Schema.UniqueScopeTo]?.Value;
+            t.bounds = param.Attributes[Schema.bounds]?.Value;
+            t.constraint = param.Attributes[Schema.constraint]?.Value;
+            t.defaultType = param.Attributes[Schema.defaultType]?.Value;
+            t.defaultval = param.Attributes[Schema.defaultValue]?.Value;
+            t.depends = param.Attributes[Schema.depends]?.Value;
+            t.isUniqueScope = param.Attributes[Schema.isUniqueScope]?.Value == "true";
+            t.maxOccurs = param.Attributes[Schema.maxOccurs]?.Value;
+            t.minOccurs = param.Attributes[Schema.minOccurs]?.Value;
+            t.metaType = param.Attributes[Schema.metaType]?.Value;
+            t.reference = param.Attributes[Schema.reference]?.Value;
+            t.referenceField = param.Attributes[Schema.referenceField]?.Value;
+            t.referenceMetaType = param.Attributes[Schema.referenceMetaType]?.Value;
+            t.referenceSubType = param.Attributes[Schema.referenceSubType]?.Value;
+            t.subType = param.Attributes[Schema.subType]?.Value;
+            t.unique = param.Attributes[Schema.unique]?.Value;
+            t.uniqueSearchRef = param.Attributes[Schema.uniqueSearchRef]?.Value;
             return t;
         }
+
+
+
     }
 }

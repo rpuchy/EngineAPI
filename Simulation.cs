@@ -20,23 +20,10 @@ namespace EngineAPI
 
         public Simulation(string filename, string schemaFilename="") : base()
         {
-            _filename = filename;
+            _filename = filename;            
             if (schemaFilename != "")
             {
-                try
-                {
-                    using (FileStream fileReader = new FileStream(schemaFilename, FileMode.Open))
-                    using (XmlReader reader = XmlReader.Create(fileReader))
-                    {
-                        _schema.Load(reader);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine("ERROR: " + ex.Message + ex.ToString() +
-                                                        Environment.NewLine);
-                    throw;
-                }
+                _schema = new Schema(schemaFilename);
             }
             try
             {
@@ -53,6 +40,7 @@ namespace EngineAPI
                 throw;
             }
             _innerXml = _xmlDoc;
+            SetFullyQualifiedName();
         }
 
         public void AddScenarioFile(string ModelID)
@@ -60,22 +48,36 @@ namespace EngineAPI
             throw new NotImplementedException();
         }
 
-        public void SetoutputLocation(string Path)
+        public void SetoutputLocation(string filename)
         {
-            throw new NotImplementedException();
+            _innerXml.SelectSingleNode("//Simulation/Params/OutputFile|//Simulation/Params/output_file").InnerText = filename;
+            
         }
 
         public void AddTransactionLog(string filename, List<int> Scenarios)
         {
-            throw new NotImplementedException();
+            if (Scenarios.Count == 0) return;
+            var Params = FindObjectbyNodeName("Params");
+            var tLog = Params.AddableObjects().Find(x => x.NodeName == "TransactionLog");
+            var tlog_obj = Params.AddObject(tLog);
+            tlog_obj.Parameters["LogFile"] = filename;
+            var ScenariosParams = tlog_obj.Children.Find(x => x.Name == "Scenarios");
+            if (Scenarios.Count ==1)
+            {
+                ScenariosParams.Parameters["Scenario"] = Scenarios[0];
+                return;
+            }
+            for (int i=1;i<Scenarios.Count;i++)
+            {
+                ScenariosParams.AddParameter("Scenario", Scenarios[i].ToString());
+            }     
         }
 
         public void RemoveOutputs()
         {
-            throw new NotImplementedException();
+            _innerXml.SelectSingleNode("\\Queries").InnerText = "";
+            _innerXml.SelectSingleNode("\\Operators").InnerText = "";
         }
-
-
 
         public Simulation(XmlDocument doc) : base(doc,new XmlDocument())
         {

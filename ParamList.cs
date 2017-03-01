@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
@@ -8,22 +9,24 @@ using System.Threading.Tasks;
 
 namespace EngineAPI
 {
-    public class ParamList : List<Parameter>
+    public class ParamList : INotifyPropertyChanged
     {
-        public object this[string name]
+
+        protected List<Parameter> InternalList = new List<Parameter>();
+        
+        public Object this[string name]
         {
             get
             {
-                int index = FindIndex(x => x.Name == name);
+                int index = InternalList.FindIndex(x => x.Name == name);
                 if (index == -1)
                 {
                     string alternate = EngineObject.GetAlternate(name);                        
-                    index = FindIndex(x => x.Name == alternate);
-                                    
+                    index = InternalList.FindIndex(x => x.Name == alternate);                                    
                 }
                 if (index >= 0)
                 {
-                    return this[index].Value;
+                    return InternalList[index].Value;
                 }
                 else
                 {
@@ -34,13 +37,13 @@ namespace EngineAPI
             {
                 try
                 {
-                    int index = FindIndex(x => x.Name == name);
+                    int index = InternalList.FindIndex(x => x.Name == name);
                     if (index == -1)
                     {   
                         string alternate = EngineObject.GetAlternate(name);
-                        index = FindIndex(x => x.Name == alternate);
+                        index = InternalList.FindIndex(x => x.Name == alternate);
                     }
-                    this[index].Value = value;
+                    InternalList[index].Value = value.ToString();
                     
                 }
                 catch (Exception e)
@@ -48,6 +51,40 @@ namespace EngineAPI
                     Console.WriteLine(e);
                     throw;
                 }                
+            }
+        }
+
+        public Parameter this[int index]
+        {
+            get
+            {
+                return InternalList[index];
+            }
+            set
+            {
+              InternalList[index].Value = value.ToString();
+            }
+        }
+
+        public void Add(Parameter param)
+        {
+            InternalList.Add(param);
+            NotifyPropertyChanged("NewParam");
+        }
+
+        public int Count
+        {
+            get
+            { return InternalList.Count(); }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void NotifyPropertyChanged(string ParamChanged)
+        {
+            if (PropertyChanged != null)
+            {
+                this.PropertyChanged(this, new PropertyChangedEventArgs(ParamChanged));
             }
         }
     }

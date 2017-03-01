@@ -20,13 +20,21 @@ namespace EngineAPI
     {
 
         protected XmlNode _innerXml { get; set; }
-        protected XmlDocument _schema = new XmlDocument();
-        protected string _schemaFilename;
+        protected Schema _schema;
+
 
         public EngineObject(XmlNode _xmlNode, XmlDocument _xmlSchema)
         {
             _innerXml = _xmlNode;
-            _schema = _xmlSchema;
+            _schema = new Schema(_xmlSchema);
+            SetFullyQualifiedName();
+        }
+
+        public EngineObject(XmlNode _xmlNode, Schema Schema)
+        {
+            _innerXml = _xmlNode;
+            _schema = Schema;
+            SetFullyQualifiedName();
         }
 
         /// <summary>
@@ -35,6 +43,22 @@ namespace EngineAPI
         protected EngineObject()
         {
 
+        }
+
+        protected void SetFullyQualifiedName()
+        {
+            //Search through the parent hirearchy and set the fully qualified name
+            string parent = "";
+            XmlNode currentNode = _innerXml;
+            while(currentNode.ParentNode!=null)
+            {
+                if (currentNode.ParentNode.Name != "#document")
+                {
+                    parent = currentNode.ParentNode.Name + "." + parent;
+                }
+                currentNode = currentNode.ParentNode;
+            }
+            FullyQualifiedName = parent+_innerXml.Name;               
         }
 
         /// <summary>
@@ -55,8 +79,18 @@ namespace EngineAPI
                         _parameters.Add(p);
                     }
                 }
+                _parameters.PropertyChanged += _parameters_PropertyChanged;
                 return _parameters;
             }
+        }
+
+        private void _parameters_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var doc = _innerXml.OwnerDocument;
+            var param = ((ParamList)sender)[((ParamList)sender).Count - 1];
+            var node = doc.CreateElement(param.Name);
+            node.AppendChild(doc.CreateTextNode(param.Value.ToString()));
+            _innerXml.AppendChild(node);
         }
 
         private void P_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -117,6 +151,20 @@ namespace EngineAPI
         /// </summary>
         public string ObjectName => _innerXml.SelectSingleNode("./Name|./Params/Name")?.InnerText;
 
+        public string ObjectType => _innerXml.SelectSingleNode("./Type|./Params/Type|./Class")?.InnerText;
+
+        public string FullyQualifiedName { get; set; }
+
+        public XmlNode SelectSingleNode(string xPath)
+        {
+            return _innerXml.SelectSingleNode(xPath);
+        }
+
+        public XmlNodeList SelectNodes(string xPath)
+        {
+            return _innerXml.SelectNodes(xPath);
+        }
+
         /// <summary>
         /// Search through the Schema and return a list of addable submodels
         /// </summary>
@@ -125,43 +173,71 @@ namespace EngineAPI
         {
             //This is for addable objects e.g. ESG models/products/rebalance rules
             List<ObjectDetails> templist = new List<ObjectDetails>();
-            XmlNode Params = _schema.SelectSingleNode("//Simulation//" + this.Name);
-            foreach (XmlNode param in Params.ChildNodes)
+            try
             {
-                if (param.Attributes["type"].Value == "container")
+                XmlNode Params = _schema.GetObjectSchema(this);
+                var ObjectList = Schema.GetObjectsFromXml(Params, Schema.ObjectClassifier.Optional);
+                //Now we check if any objects have maxOccurs=1 and already exist
+
+                foreach (var obj in ObjectList)
                 {
-                    templist.Add(ObjectDetails.LoadFromXml(param));
+                    if (obj.maxOccurs >= 1)
+                    {
+                        int count = Children.FindAll(x => x.Name == obj.NodeName).Count;
+                        if (count < obj.maxOccurs)
+                        {
+                            templist.Add(obj);
+                        }
+                    }
                 }
+            }
+            catch(Exception e)
+            {
+
             }
             return templist;
         }
 
 
-
+        public EngineObject AddObject(ObjectDetails AddObject)
+        {
+            //first check we can add the object
+            if (AddableObjects().Find(x=>x.NodeName==AddObject.NodeName)!=null)
+            {
+                var node = _innerXml.OwnerDocument.ImportNode(AddObject.XmlSnippet, true);
+                node.Attributes.RemoveAll();
+                foreach (XmlElement el in node.SelectNodes(".//*"))
+                {
+                    if (el.Attributes[Schema.defaultValue] != null)
+                    {
+                        el.InnerText = el.Attributes[Schema.defaultValue].Value;
+                    }
+                    el.Attributes.RemoveAll();
+                }
+                _innerXml.AppendChild(node);
+                return new EngineObject(node,_schema);
+            }
+            return null;
+        }
+        
         public List<ParameterDetails> AddableParameters()
         {
             //this is so we can see optional parameters
-            List<ParameterDetails> templist = new List<ParameterDetails>();
-            XmlNode Params = _schema.SelectSingleNode("//Simulation//" + this.Name);
-            foreach (XmlNode param in Params.ChildNodes)
-            {
-                if (param.Attributes["type"].Value != "container")
-                {
-                   templist.Add(ParameterDetails.LoadFromXml(param));
-                }
-            }
-            return templist;           
+            
+            XmlNode Params = _schema.GetObjectSchema(this);
+            return Schema.GetParametersFromXml(Params);           
+        }
+
+        public void AddParameter(String pName,string pValue)
+        {
+            Parameters.Add(new Parameter() { Name = pName, Value = pValue });
         }
 
         public List<string> AddableValueTypes()
-        {
-            List<string> templist = new List<string>();
-            XmlNode Params = _schema.SelectSingleNode("//Simulation//" + this.Name);
-            foreach (string val in Params.Attributes["ValueTypes"].Value.Split(','))
-            {
-                templist.Add(val);
-            }
-            return templist;
+        {            
+            //Get the models
+            XmlNode Params = _schema.GetObjectSchema(this);            
+            return Schema.GetValueTypesfromXml(Params);
         }
 
         protected void AddQuery(string ValueType)
@@ -181,7 +257,7 @@ namespace EngineAPI
         
         private static bool IsParameter(XmlNode node)
         {
-            return (node.ChildNodes.Count == 1 && node.FirstChild.Name == "#text");
+            return ((node.ChildNodes.Count == 1 && node.FirstChild.Name == "#text") || node.ChildNodes.Count == 0);
         }
 
         private static bool IsComment(XmlNode node)

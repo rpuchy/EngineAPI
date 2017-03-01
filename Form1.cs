@@ -23,10 +23,18 @@ namespace EngineAPI
 
 
             string children = "";
-            MySimulation.FindObjectbyNodeName("Params").Parameters["Scenarios"] = 1.ToString();
+            MySimulation.FindObjectbyNodeName("Params").Parameters["Scenarios"] = 1;
 
-            var test = MySimulation.FindObjectbyNodeName("Params").AddableParameters();
+            var test = MySimulation.FindObjectbyNodeName("Params").AddableObjects();
 
+            var slist = new List<int>();
+
+            slist.Add(1);
+            slist.Add(2);
+
+            MySimulation.AddTransactionLog("c:\\temp\\tlog.csv", slist);
+
+            MySimulation.SetoutputLocation("c:\\temp\\results.csv");
 
             MySimulation.SaveAs("c:\\temp\\sim1scenario.xml");
 
