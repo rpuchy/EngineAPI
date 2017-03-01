@@ -84,6 +84,15 @@ namespace EngineAPI
             }
         }
 
+        public ObservableCollection<Parameter> ParametersOC
+        {
+            get
+            {
+                return null;
+
+            }
+        }
+
         private void _parameters_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == "New")
@@ -295,13 +304,28 @@ namespace EngineAPI
 
         public void removeObject(EngineObject Obj)
         {
-             Children.Remove(Obj);
+            int count = Children.FindAll(x => x.Name == Obj.Name).Count;
+            XmlNode Params = _schema.GetObjectSchema(this);
+            var ObjectList = Schema.GetObjectsFromXml(Params, Schema.Classifier.Optional);
+            if (ObjectList.Find(x => x.NodeName == Obj.Name).minOccurs > count)
+            {
+                Children.Remove(Obj);
+            }
         }
         
         public List<ParameterDetails> AddableParameters()
-        {      
+        {   
             XmlNode Params = _schema.GetObjectSchema(this);
-            return Schema.GetParametersFromXml(Params,Schema.Classifier.Optional);           
+            List<ParameterDetails> temp = new List<ParameterDetails>();
+            var ParamList = Schema.GetParametersFromXml(Params,Schema.Classifier.Optional);  
+            foreach (var Param in ParamList)
+            {
+                if (Parameters.FindAll(x => x.Name == Param.Name).Count<Param.maxOccurs)
+                {
+                    temp.Add(Param);
+                }
+            }
+            return temp;         
         }
 
         public void AddParameter(String pName,string pValue)

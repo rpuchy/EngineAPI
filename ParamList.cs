@@ -45,7 +45,7 @@ namespace EngineAPI
                 }
                 catch (Exception e)
                 {
-                    throw new Exception("Parameter : "+name+" could not be found");
+                    throw new Exception("Parameter : ");
                 }                
             }
         }
