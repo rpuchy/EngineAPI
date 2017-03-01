@@ -69,22 +69,28 @@ namespace EngineAPI
         public void Add(Parameter param)
         {
             InternalList.Add(param);
-            NotifyPropertyChanged("NewParam");
+            NotifyPropertyChanged("New",param);
+        }
+
+        public void Remove(Parameter param)
+        {
+            InternalList.Remove(param);
+            NotifyPropertyChanged("Remove",param);
         }
 
         public int Count
         {
             get
-            { return InternalList.Count(); }
+            { return InternalList.Count();}
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private void NotifyPropertyChanged(string ParamChanged)
+        private void NotifyPropertyChanged(string ParamChanged, Parameter Changed)
         {
             if (PropertyChanged != null)
             {
-                this.PropertyChanged(this, new PropertyChangedEventArgs(ParamChanged));
+                this.PropertyChanged(Changed, new PropertyChangedEventArgs(ParamChanged));
             }
         }
     }

@@ -87,7 +87,7 @@ namespace EngineAPI
         private void _parameters_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             var doc = _innerXml.OwnerDocument;
-            var param = ((ParamList)sender)[((ParamList)sender).Count - 1];
+            var param = (Parameter)sender;
             var node = doc.CreateElement(param.Name);
             node.AppendChild(doc.CreateTextNode(param.Value.ToString()));
             _innerXml.AppendChild(node);
